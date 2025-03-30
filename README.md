@@ -1,8 +1,16 @@
-# FP: Zero To Monad - Workshop
+# Exercise 6 (FP: Zero To Monad - Workshop)
 
-The exercises here are expressly for the purposes of the workshop, "FP: Zero To Monad".
+In this exercise, you will fill out the implementation of `buildMarkdownList()` to adhere to the following requirements:
 
-You will find branches for each exercise, in the form of "ex-1" and "ex-1-solution". Each exercise includes a README to explain the instructions.
+1. is a reducer, so accepts two parameters:
+    - `markdown` (string) accumulator
+    - `id` (number) user ID to look up
+2. filter the list of user IDs and compile matching users into the markdown-style list (e.g., `* list item`)
+3. use provided functions `lookupUser()`, `filterUser()`, and `markdownList()`
+
+## Tests
+
+The `runTests(buildMarkdownList)` call invokes the tests (in `./test.js`). It should complete with no failures listed.
 
 ## License
 

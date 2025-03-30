@@ -15,5 +15,11 @@ runTests(buildMarkdownList);
 // *****************************************
 
 function buildMarkdownList(markdown,id) {
-	// TODO: implement per requirements
+	var user = lookupUser(id);
+	if (filterUser(user)) {
+		return markdownList(markdown,user);
+	}
+	else {
+		return markdown;
+	}
 }

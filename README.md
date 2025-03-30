@@ -1,8 +1,16 @@
-# FP: Zero To Monad - Workshop
+# Exercise 1 (FP: Zero To Monad - Workshop)
 
-The exercises here are expressly for the purposes of the workshop, "FP: Zero To Monad".
+In this exercise, you will fill out the implementation of `selectUsers()` to adhere to the following requirements:
 
-You will find branches for each exercise, in the form of "ex-1" and "ex-1-solution". Each exercise includes a README to explain the instructions.
+1. accept the `users` array as its only parameter
+2. return a new list of selected users, without modifying the original list
+3. select only the entries which have `verified: true`
+4. *copy* the contents of the entry to a new object (in the new list), including only the `name` and `email` properties
+5. sort the new list alphabetically, on the `name` property (hint: array `sort(fn)`)
+
+## Tests
+
+The `runTests(selectUsers)` call invokes the tests (in `./test.js`). It should complete with no failures listed.
 
 ## License
 

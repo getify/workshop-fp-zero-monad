@@ -1,0 +1,11 @@
+{
+	"name": "exercise-7",
+	"version": "0.0.0",
+	"type": "module",
+	"main": "exercise.js",
+	"dependencies": {
+		"monio": "~0.71.0"
+	},
+	"author": "Kyle Simpson <getify@gmail.com>",
+	"license": "MIT"
+}

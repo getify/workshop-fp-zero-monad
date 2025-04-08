@@ -8,5 +8,14 @@ runTests(calc);
 // *****************************************
 
 function calc(token) {
-	// TODO: implement per requirements
+	return function next(tokens) {
+		if (tokens[tokens.length - 1] == "=") {
+			return compute(tokens.slice(0,-1));
+		}
+		else {
+			return token => {
+				return next([ ...tokens, token ]);
+			};
+		}
+	}([ token ]);
 }

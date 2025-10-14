@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Exercise 8: ToDoovy</title>
+<link rel="stylesheet" href="exercise.css">
+</head>
+<body>
+<h1>Exercise 8: ToDoovy</h1>
+
+<div>
+	<div id="success-msg" class="hidden" aria-live="polite"></div>
+	<div id="error-msg" class="hidden" aria-live="polite"></div>
+</div>
+
+<fieldset>
+	<legend>Add Todo</legend>
+	<form id="add-todo">
+		<label>
+			Todo <input type="text" id="new-todo">
+		</label>
+		<button type="submit">add</button>
+	</form>
+</fieldset>
+
+<ul id="todos" aria-live="polite"></ul>
+
+<script type="importmap">
+{
+	"imports": {
+		"monio": "./node_modules/monio/dist/esm/index.mjs",
+		"monio/io/helpers": "./node_modules/monio/dist/esm/io/helpers.mjs"
+	}
+}
+</script>
+<script type="module" src="exercise.js"></script>
+</body>

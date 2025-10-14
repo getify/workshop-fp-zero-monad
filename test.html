@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Exercise 8: ToDoovy Tests</title>
+	<style>
+		body { font: 14px/1.4 system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+		aside { border-right: 1px solid #ddd; padding: 12px; overflow: auto; }
+		main { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+		header { padding: 8px 12px; border-bottom: 1px solid #ddd; display:flex; align-items:center; gap:8px; }
+		#results .pass { color: #0a0; }
+		#results .fail { color: #c00; }
+		#results details { margin: 6px 0; }
+		iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+		code { background: #f6f8fa; padding: 2px 4px; border-radius: 3px; }
+		button { font: inherit; padding: 4px 8px; border:1px solid #ccc; border-radius:6px; background:#fafafa; cursor:pointer; }
+		button:hover { background:#f0f0f0; }
+		.controls { display:flex; gap:8px; margin-top:8px; }
+		.test-actions { margin-left:8px; display:inline-flex; gap:6px; }
+		.muted { color:#666; }
+	</style>
+</head>
+<body>
+	<aside>
+		<h2>Test Results</h2>
+		<div id="summary">—</div>
+		<div class="controls">
+			<button id="run-all" style="display:none">Run all</button>
+			<button id="reset-app">Reset app</button>
+			<span id="mode-indicator" class="muted"></span>
+		</div>
+		<div id="results"></div>
+	</aside>
+
+	<main>
+		<header>
+			<strong>App under test</strong>
+			<span class="muted">(fresh iframe per test)</span>
+		</header>
+		<iframe id="app-frame" src="index.html"></iframe>
+	</main>
+
+	<script src="test.js" type="module"></script>
+</body>
+</html>

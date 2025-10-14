@@ -9,23 +9,24 @@ runTests(compute);
 function compute(tokens) {
 	var [ result, index ] = computeRec(tokens,0,0);
 
-	// TODO: check `index` to detect if there are
-	// any leftover tokens; throw an error
+	// check `index` to detect if there are
+	// any leftover tokens
+	if (index != tokens.length) {
+		throw new Error("Extra tokens at the end");
+	}
 
 	return result;
 }
 
 function computeRec(tokens,index = 0,minPrec = 0) {
-	// TODO: recursively compute left-hand side (LHS),
+	// recursively compute left-hand side (LHS),
 	// aka "Primary"
-	//
-	// TODO: along with LHS, now reduce the rest of
-	// tokens (including an operator and right-hand
-	// side (RHS), aka "Tail"), to compute the final
-	// result
-	//
-	// TODO: to ensure tail call, remove this...
-	return [ /*result*/, /*index*/ ];
+	var [ lhs, i ] = computePrimary(tokens,index);
+
+	// along with LHS, now reduce the rest of tokens
+	// (including an operator and right-hand side (RHS),
+	// aka "Tail"), to compute the final result
+	return computeTail(tokens,i,lhs,minPrec);
 }
 
 function computeTail(tokens,index,lhs,minPrec) {
@@ -53,11 +54,9 @@ function computeTail(tokens,index,lhs,minPrec) {
 	// of precedence than current
 	var nextMinPrec = precedence(token) + 1;
 
-	// TODO: since we're at a higher level of precedence
-	// with this operator, recurse into next token(s) to
-	// compute new RHS, taking into account new minimum
-	// level of precedence
-	var [ rhs, nextIndex ] = TODO(/* .. */);
+	// recurse into next token(s) to compute new RHS,
+	// taking into account new minimum level of precedence
+	var [ rhs, nextIndex ] = computeRec(tokens,index + 1,nextMinPrec);
 
 	// now that we have an LHS, op (token), and an RHS,
 	// compute the result as a new partial LHS/primary
@@ -71,24 +70,27 @@ function computeTail(tokens,index,lhs,minPrec) {
 		null
 	);
 
-	// TODO: self-recurse to keep reducing LHS/tail as
+	// self-recurse to keep reducing LHS/tail as
 	// far as possible
-	return TODO(/* .. */);
+	return computeTail(tokens,nextIndex,newLHS,minPrec);
 }
 
 function computePrimary(tokens,index) {
 	var token = tokens[index];
 	if (token == "(") {
-		// TODO: (mutually) recurse to compute a new
+		// (mutually) recurse to compute a new
 		// term that represents the entirety of the
 		// operation(s) inside this ( ) grouping
-		let [ val, nextIndex ] = TODO(/* .. */);
+		let [ val, nextIndex ] = computeRec(tokens,index + 1,0);
 
-		// TODO: verify the next token is an expected
-		// closing ")"; otherwise, throw error
+		// verify the next token is an expected
+		// closing ")"
+		if (tokens[nextIndex] != ")") {
+			throw new Error("Missing closing parenthesis");
+		}
 
-		// TODO: return back partial primary result
-		return [ /* val */, /* index */ ];
+		// return back partial primary result
+		return [ val, nextIndex + 1 ];
 	}
 	else if (typeof token == "number") {
 		return [ token, index + 1 ];

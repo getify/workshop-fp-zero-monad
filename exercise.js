@@ -10,7 +10,11 @@ runTests(defineApp);
 
 function *defineApp() {
 	try {
-		// TODO: implement per requirements
+		var { email, password } = yield *(validateInput());
+
+		yield *$(submitRegistration(email,password));
+
+		return yield *(displaySuccess(email));
 	}
 	catch (err) {
 		return yield *(displayError(err));
@@ -38,9 +42,18 @@ function *validateInput() {
 			))
 	);
 
-	// TODO: implement per requirements
+	// validate password
+	var password = yield *(getElementValueById("password"));
+	password = yield *(
+		requireField(password,"Password missing.")
+			.chain(pw => (
+				pw.length >= 12 ?
+					Either.Right(pw) :
+					Either.Left("Password insufficient.")
+			))
+	);
 
-	return { email };
+	return { email, password };
 }
 
 function displayError(err) {

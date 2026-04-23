@@ -1,6 +1,3 @@
-// TASK: these comments define the exercise tasks
-// to complete (like typical "TODO" comments)
-
 import { Maybe, Either, IO, State } from "monio";
 import { getReader, tap as tapIO } from "monio/io/helpers";
 
@@ -29,15 +26,15 @@ IO.do(defineApp)
 // *****************************************
 
 function getElementById(id) {
-	// TASK: define IO that pulls out `context` from
-	// its Reader env (aka `document`), invokes
-	// `context.getElementById()`, and wraps the result
-	// in a `Maybe` (hint: `from()`)
+	return IO(({ context }) => (
+		Maybe.from(context.getElementById(id))
+	));
 }
 
 function querySelector(selector) {
-	// TASK: like `getElementById()`, but with
-	// `el.querySelector()`
+	return el => IO(() => (
+		Maybe.from(el.querySelector(selector))
+	));
 }
 
 function addClass(className) {
@@ -45,13 +42,11 @@ function addClass(className) {
 }
 
 function removeClass(className) {
-	// TASK: implement like `addClass()`, but with
-	// `.remove()`
+	return el => IO(() => el.classList.remove(className));
 }
 
 function toggleClass(className) {
-	// TASK: implement like `addClass()`, but with
-	// `.toggle()`
+	return el => IO(() => el.classList.toggle(className));
 }
 
 function matches(selector) {
@@ -63,7 +58,7 @@ function createElement(elType) {
 }
 
 function removeElement(el) {
-	// TASK: define an IO that calls `el.remove()`
+	return IO(() => el.remove());
 }
 
 function getAttr(attrName) {
@@ -93,17 +88,15 @@ function getValue(el) {
 }
 
 function appendTo(parentEl) {
-	// TASK: return a function that receives `el`,
-	// then defines an IO calls `parentEl.appendChild()`
-	// with it
+	return el => IO(() => parentEl.appendChild(el));
 }
 
 function addEventListener(evtName,handler) {
 	return el => IO(env => (
 		el.addEventListener(evtName,evt => (
-			"TASK:" // invoke `handler()`, then invoke the
-			// the returned IO's `run()`, and `catch()`
-			// any promise exception with `handleError()`
+			handler(evt)
+				.run(env)
+				.catch(handleError)
 		))
 	));
 }
@@ -143,63 +136,48 @@ function haltEvent(evt) {
 
 function validateNewTodo(s) {
 	return (
-		"TASK:" // validate the `s` is non-empty, and <= 50
-		// char length; return friendly error messages for
-		// *either* case with `Either.Left()`; if validated,
-		// wrap `s` in `Either:Right()`
-		//
-		// NOTE: this is a pure function only, no IO's,
-		// side effects, thrown exceptions, etc
+		s == "" ? Either.Left("Please enter some Todo text") :
+		s.length > 50 ? Either.Left("Todo is too long") :
+		Either.Right(s)
 	);
 }
 
 function *onFormSubmit(evt) {
 	yield *(haltEvent(evt));
 
-	// TASK: bind `getReader()` and extract the
-	// `state.newTodoInpEl` value from, assign to
-	// `newTodoInpEl` variable
+	var { state: { newTodoInpEl } } = yield *(getReader());
 
 	try {
 		var newTodoText = (
-			"TASK:" // bind `getValue()` for `newTodoInpEl`,
-			// and `trim()` its string value
+			(yield *(getValue(newTodoInpEl))).trim()
 		);
 
 		// note: will throw if validation fails
 		yield *(validateNewTodo(newTodoText));
 	}
 	catch (err) {
-		// TASK: display the friendly validation error
-		// to the user, then focus the `newTodoInpEl`
-		// element
+		yield *(displayError(err));
+		return yield *(focusElement(newTodoInpEl));
 	}
 
-	// TASK: bind `saveNewTodo()` and extract the `id`
-	// from its return to assign to `todoID`
-	// (hint: yield*)
+	var { id: todoID } = yield *(saveNewTodo(newTodoText));
 
 	yield *(renderTodoElement(todoID,newTodoText));
 
-	// TASK: clear the success/error messages, empty
-	// the `newTodoInpEl` element's `value`, and focus
-	// the element
+	// reset input/form
+	yield *(clearSuccessError());
+	yield *(setValue("")(newTodoInpEl));
+	return yield *(focusElement(newTodoInpEl));
 }
 
 function *renderTodoElement(todoID,todoText) {
-	// TASK: bind `getReader()` and extract the
-	// `state.todosEl` value from, assign to `todosEl`
-	// variable
+	var { state: { todosEl } } = yield *(getReader());
 
 	// render Todo <li> element (and scroll it into view)
 	return yield *(
 		createElement("li")
 			.chain(tapIO(setAttr("data-id",todoID)))
-
-			// TASK: add a chain() step that adds the
-			// `todo` class to the DOM element, and passes
-			// along that element (hint: `tapIO()`)
-
+			.chain(tapIO(addClass("todo")))
 			.chain(
 				tapIO(setProp(
 					"innerHTML",
@@ -223,15 +201,13 @@ function *renderTodoElement(todoID,todoText) {
 					</button>`
 				))
 			)
-
-			// TASK: add a chain() step that appends this
-			// new DOM element to `todosEl`, and passes
-			// along that appended element (hint: `tapIO()`)
-
+			.chain(tapIO(appendTo(todosEl)))
 			.chain(tapIO(liEl => (
-				"TASK:" // find `label > span` child DOM element
-				// via `querySelector()` and `liEl`, and set
-				// its `innerText` property to `todoText`
+				expectElement(
+					querySelector("label > span")(liEl),
+					"Label Span element not found"
+				)
+					.chain(setProp("innerText",todoText))
 			)))
 			.chain(scrollToElement)
 	);
@@ -239,22 +215,26 @@ function *renderTodoElement(todoID,todoText) {
 
 function *onTodosClick(evt) {
 	if (yield *(matches(".mark-todo")(evt.target))) {
-		let todoID = Number(yield *(getAttr("data-id")(evt.target)));
-
-		// TASK: bind `toggleTodoComplete(todoID)` and
-		// catch any exception; halt the event handling
-		// display a friendly error: "Todo complete not
-		// toggled", then re-throw the exception
-		// (hint: return yield *)
+		let todoID = Number(yield *getAttr("data-id")(evt.target));
+		try {
+			return yield *(toggleTodoComplete(todoID));
+		}
+		catch (err) {
+			yield *(haltEvent(evt));
+			yield *(displayError("Todo complete not toggled"));
+			throw err;
+		}
 	}
 	else if (yield *(matches(".btn-remove-todo")(evt.target))) {
 		yield *(haltEvent(evt));
 		let todoID = Number(yield *(getAttr("data-id")(evt.target)));
-
-		// TASK: bind `removeTodo(todoID)` and catch
-		// any exception; display a friendly error: "Todo
-		// not removed", then re-throw the exception
-		// (hint: return yield *)
+		try {
+			return yield *(removeTodo(todoID));
+		}
+		catch (err) {
+			yield *(displayError("Todo not removed"));
+			throw err;
+		}
 	}
 }
 
@@ -262,27 +242,42 @@ function *toggleTodoComplete(todoID) {
 	// update state
 	var { state: newState } = yield *(applyState(
 		State.do(function*(){
-			// TASK: bind `expectTodoEntry()` to find
-			// entry by ID, assign tuple contents as
-			// [ `todoRecordIdx`, `todoRecord` ]
+			// find Todo record (throws if not found)
+			var [ todoRecordIdx, todoRecord ] = (
+				yield *(expectTodoEntry(
+					todoID,
+					`Todo (${todoID}) state record not found`
+				)
+			));
 
-			// TASK: define updated Todo record with
-			// `complete` boolean flag flipped
+			// update Todo record
+			var updatedTodoRecord = {
+				...todoRecord,
 
+				// toggle complete flag
+				complete: !todoRecord.complete
+			};
+
+			// update state
 			return yield *(State.modify(state => ({
-				// TASK: copy existing state contents, and
-				// redefine `todos` array to splice in (by
-				// index) the updated Todo record (from above),
-				// replacing the old record
+				...state,
+
+				// splice in updated Todo record
+				todos: [
+					...state.todos.slice(0,todoRecordIdx),
+					updatedTodoRecord,
+					...state.todos.slice(todoRecordIdx + 1)
+				]
 			})));
 		})
 	));
 
-	// TASK: find (via `querySelector()` / `newState.todosEl`)
-	// the `<li>` with a matching `data-id` (to `todoID`)
-
-	// TASK: toggle the `complete` class on the found `<li>`
-	// DOM element
+	// toggle completed visual marking for Todo element
+	var todoElement = yield	*(expectElement(
+		querySelector(`li[data-id='${todoID}']`)(newState.todosEl),
+		`Todo (${todoID}) element not found`
+	));
+	return yield *(toggleClass("complete")(todoElement));
 }
 
 function *removeTodo(todoID) {
@@ -291,17 +286,36 @@ function *removeTodo(todoID) {
 		value: removedTodoRecord,
 		state: newState
 	} = yield *(applyState(
-		// TASK: similar to `toggleTodoComplete()`, define
-		// a State program (chain or State.do() routine)
-		// that finds the Todo entry (idx,record), *modifies*
-		// the state to remove (by index) the Todo record
-		// from the `state.todos` array, and finally returns
-		// the removed Todo record
+		State.do(function*(){
+			// find Todo record (throws if not found)
+			var [ todoRecordIdx, todoRecord ] = (
+				yield *(expectTodoEntry(
+					todoID,
+					`Todo (${todoID}) state record not found`
+				))
+			);
+
+			// update state
+			yield *(State.modify(state => ({
+				...state,
+
+				// remove Todo record
+				todos: [
+					...state.todos.slice(0,todoRecordIdx),
+					...state.todos.slice(todoRecordIdx + 1)
+				]
+			})));
+
+			return todoRecord;
+		})
 	));
 
-	// TASK: find (via `querySelector()` / `newState.todosEl`)
-	// the `<li>` with a matching `data-id` (to `todoID`),
-	// and remove if (if found)
+	// remove Todo element
+	var todoElement = yield *(expectElement(
+		querySelector(`li[data-id='${todoID}']`)(newState.todosEl),
+		`Todo (${todoID}) element not found`
+	));
+	yield *(removeElement(todoElement));
 
 	return yield *(
 		displaySuccess(`Todo ('${removedTodoRecord.todo}') removed`)
@@ -318,10 +332,11 @@ function makeTodoRecord(newTodoText) {
 
 function appendTodoRecord(newTodoRecord) {
 	return State(state => ({
-		// TASK: define a { value, state } tuple
-		// that sets `newTodoRecord` to value
-		// and also appends it to the end of
-		// the `state.todos` array
+		value: newTodoRecord,
+		state: {
+			...state,
+			todos: [ ...state.todos, newTodoRecord ]
+		}
 	}));
 }
 
@@ -329,11 +344,11 @@ function *saveNewTodo(newTodoText){
 	// pull Todo entry from { value, state } result
 	var { value: newTodoEntry } = yield *(
 		applyState(
-			// TASK: define State program (chain or State.do()
-			// routine) that binds `nextTodoID` State program to get
-			// a new `todoID`, call makeTodoRecord(), and finally
-			// pass that to `appendTodoRecord()`
-			// (hint: State.do())
+			State.do(function*(){
+				var todoID = yield *(nextTodoID);
+				var todoRecord = makeTodoRecord(newTodoText)(todoID);
+				return yield *(appendTodoRecord(todoRecord));
+			})
 		)
 	);
 
@@ -356,42 +371,84 @@ function *defineApp() {
 
 			// find and focus new-todo input
 			.chain(formEl => (
-				"TASK:" // find `#new-todo` <input> element
-				// using `querySelector()` on the `formEl`
+				expectElement(
+					querySelector("#new-todo")(formEl),
+					"New Todo input element missing"
+				)
 			))
 			.chain(tapIO(focusElement))
 	);
 
 	var todosEl = yield *(
-		"TASK:" // define an IO that finds the `#todos` DOM
-		// element, adds a "click" event listener to call
-		// the `onTodosClick()` handler, and returns the
-		// DOM element back to `todosEl` (hint: `tapIO()`)
+		// find Todos list element
+		expectElement(
+			getElementById("todos"),
+			"Todos list element missing"
+		)
+			// setup click handler for todo items
+			.chain(
+				tapIO(addEventListener("click",evt => (
+					IO.do(onTodosClick(evt))
+				)))
+			)
 	);
 
 	// initialize state
 	return yield *(applyState(
-		"TASK:" // pass a State program that *modifies*
-		// the existing state (inherited from IO Reader
-		// context), adding `todos: []`, `newTodoInpEl`,
-		// and `todosEl`
+		State.modify(state => {
+			return {
+				...state,
+				todos: [],
+				newTodoInpEl,
+				todosEl
+			};
+		})
 	));
 }
 
 function *clearSuccessError() {
-	// TASK: like `displayError()` and `displaySuccess()`,
-	// find both `#success-msg` and `#error-msg` DOM
-	// elements, add the `hidden` class, and empty their
-	// `innerText` property, respectively
+	// hide/empty error notification
+	yield *(
+		expectElement(
+			getElementById("error-msg"),
+			"Error notification element missing"
+		)
+			.chain(tapIO(addClass("hidden")))
+			.chain(setProp("innerText",""))
+	);
+
+	// hide/empty success notification
+	return yield *(
+		expectElement(
+			getElementById("success-msg"),
+			"Success notification element missing"
+		)
+			.chain(tapIO(addClass("hidden")))
+			.chain(setProp("innerText",""))
+	);
 }
 
 function *displaySuccess(msg) {
-	// TASK: symmetric with `displayError()`, find the
-	// `#error-msg` DOM element, add the `hidden` class
-	// to it, and empty its `innerText` property; then
-	// find the `#success-msg` DOM element, remove the
-	// `hidden` class, set its `innerText` property,
-	// and then scroll to the DOM element
+	// hide/empty error notification
+	yield *(
+		expectElement(
+			getElementById("error-msg"),
+			"Error notification element missing"
+		)
+			.chain(tapIO(addClass("hidden")))
+			.chain(setProp("innerText",""))
+	);
+
+	// show/populate success notification
+	return yield *(
+		expectElement(
+			getElementById("success-msg"),
+			"Success notification element missing"
+		)
+			.chain(tapIO(removeClass("hidden")))
+			.chain(tapIO(setProp("innerText",msg)))
+			.chain(scrollToElement)
+	);
 }
 
 function *displayError(err) {
@@ -407,12 +464,13 @@ function *displayError(err) {
 
 	// show/populate error notification
 	return yield *(
-		"TASK:" // like the block above, define an IO
-		// (chain or IO.do() routine) that finds the
-		// `#error-msg` DOM element, removes the
-		// `hidden` class, and sets the `innerText`
-		// property to `err`, and then scrolls to the
-		// DOM element
+		expectElement(
+			getElementById("error-msg"),
+			"Error notification element missing"
+		)
+			.chain(tapIO(removeClass("hidden")))
+			.chain(tapIO(setProp("innerText",err)))
+			.chain(scrollToElement)
 	);
 }
 
@@ -431,10 +489,17 @@ function expectElement(elMIO,err) {
 }
 
 function *expectTodoEntry(todoID,errMsg) {
-	// TASK: look in the state (inherited from the
-	// IO Reader context) for the `todos` array; if
-	// not found, `throw new Error(errMsg)`; if found,
-	// return the "entry" (array tuple `[ index, value ]`)
+	var curState = yield *(State.get());
+
+	var recordIdx = curState.todos.findIndex(
+		rec => rec.id == todoID
+	);
+
+	if (recordIdx == -1) {
+		throw new Error(errMsg);
+	}
+
+	return [ recordIdx, curState.todos[recordIdx] ];
 }
 
 function handleError(err) {
